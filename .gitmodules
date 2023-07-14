@@ -101,3 +101,7 @@
 [submodule "LiveSplit/Libs/livesplit-core"]
 	path = LiveSplit/Libs/livesplit-core
 	url = https://github.com/LiveSplit/livesplit-core.git
+[submodule "LiveSplit/Components/LiveSplit.ObsPipe"]
+	path = LiveSplit/Components/LiveSplit.ObsPipe
+	url = https://github.com/nullsrv/LiveSplit.ObsPipe.git
+	branch = devel
