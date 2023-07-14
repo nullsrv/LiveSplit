@@ -137,6 +137,7 @@
     <Compile Include="Model\Input\XInput.cs" />
     <Compile Include="Model\MetadataChangedEventArgs.cs" />
     <Compile Include="ComponentUtil\ProcessExtensions.cs" />
+    <Compile Include="Model\PostPaintEventArgs.cs" />
     <Compile Include="Model\RunFactories\StandardFormatsRunFactory.cs" />
     <Compile Include="Model\RunMetadata.cs" />
     <Compile Include="Model\RunSavers\ExcelRunSaver.cs" />
@@ -186,6 +187,7 @@
     <Compile Include="UI\ImageExtensions.cs" />
     <Compile Include="UI\InputBox.cs" />
     <Compile Include="UI\Invalidator.cs" />
+    <Compile Include="UI\IPostPaintEvent.cs" />
     <Compile Include="UI\SettingsHelper.cs" />
     <Compile Include="UI\RenameEventArgs.cs" />
     <Compile Include="Updates\Git.cs" />

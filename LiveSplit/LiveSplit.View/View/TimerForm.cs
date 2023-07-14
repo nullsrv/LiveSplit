@@ -39,7 +39,7 @@ using UpdateManager;
 
 namespace LiveSplit.View
 {
-    public partial class TimerForm : Form
+    public partial class TimerForm : Form, IPostPaintEvent
     {
         protected IComparisonGeneratorsFactory ComparisonGeneratorsFactory { get; set; }
         protected ComponentRenderer ComponentRenderer { get; set; }
@@ -154,6 +154,11 @@ namespace LiveSplit.View
         }
 
         private float? ResizingInitialAspectRatio { get; set; } = null;
+
+        // Obs-Pipe-Support
+        private int FrameId { get; set; }
+        private Bitmap FullFrameBitmap { get; set; }
+        private event EventHandler<PostPaintEventArgs> PostPaintEvent;
 
         [DllImport("user32.dll")]
         static extern int GetUpdateRgn(IntPtr hWnd, IntPtr hRgn, [MarshalAs(UnmanagedType.Bool)] bool bErase);
@@ -321,6 +326,9 @@ namespace LiveSplit.View
             new System.Timers.Timer(1000) { Enabled = true }.Elapsed += RaceRefreshTimer_Elapsed;
 
             InitDragAndDrop();
+
+            FrameId = 0;
+            FullFrameBitmap = null;
         }
 
         private void InitDragAndDrop()
@@ -1351,13 +1359,55 @@ namespace LiveSplit.View
             {
                 var clip = e.Graphics.Clip;
                 e.Graphics.Clip = new Region();
-                PaintForm(e.Graphics, clip);
+
+                var myBitmap = new Bitmap(Size.Width, Size.Height, PixelFormat.Format32bppArgb);
+                var myGraphics = Graphics.FromImage(myBitmap);
+
+                myGraphics.CompositingMode = CompositingMode.SourceOver;
+
+                PaintForm(myGraphics, clip);
+
+                var rendered = DateTime.UtcNow;
+
+                e.Graphics.CompositingQuality = CompositingQuality.GammaCorrected;
+                e.Graphics.DrawImage(myBitmap, new Rectangle(0, 0, Size.Width, Size.Height));
+
+                if (FullFrameBitmap == null || FullFrameBitmap.Width != myBitmap.Width || FullFrameBitmap.Height != myBitmap.Height)
+                {
+                    FullFrameBitmap = new Bitmap(myBitmap.Width, myBitmap.Height);
+                }
+
+                using (Graphics g = Graphics.FromImage(FullFrameBitmap))
+                {
+                    g.CompositingQuality = CompositingQuality.GammaCorrected;
+                    var regions = UpdateRegion.GetRegionScans(new Matrix());
+                    foreach (var rgn in regions)
+                    {
+                        g.CompositingMode = CompositingMode.SourceCopy;
+                        g.FillRectangle(Brushes.Transparent, rgn);
+                        g.CompositingMode = CompositingMode.SourceOver;
+                        g.DrawImage(myBitmap, rgn, rgn, GraphicsUnit.Pixel);
+                    }
+                }
+
+                var ppea = new PostPaintEventArgs(FrameId, FullFrameBitmap, UpdateRegion, rendered);
+                PostPaintEvent?.Invoke(this, ppea);
+
+                FrameId += 1;
             }
             catch (Exception ex)
             {
                 Log.Error(ex);
                 Invalidate();
             }
+        }
+        public void RegisterEventHandler(EventHandler<PostPaintEventArgs> handler)
+        {
+            PostPaintEvent += handler;
+        }
+        public void UnregisterEventHandler(EventHandler<PostPaintEventArgs> handler)
+        {
+            PostPaintEvent -= handler;
         }
 
         private void DrawBackground(Graphics g)
